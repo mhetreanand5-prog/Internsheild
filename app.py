@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import pickle
 import re
+import os
 
 app = Flask(__name__)
 app.secret_key = "fakejob_secret_2024"
@@ -12,12 +13,12 @@ try:
     with open("vectorizer.pkl", "rb") as f:
         vectorizer = pickle.load(f)
     print("[INFO] Model loaded")
-except:
+except Exception as e:
+    print("[WARNING] Model not loaded:", e)
     model = None
     vectorizer = None
-    print("[WARNING] Model not loaded")
 
-# ---------------- USERS (FIXED) ----------------
+# ---------------- USERS ----------------
 USERS = {
     "admin": "admin123",
     "student": "pass123",
@@ -100,7 +101,7 @@ def login():
         u = request.form.get("username", "").strip()
         p = request.form.get("password", "").strip()
 
-        print("DEBUG LOGIN:", u, p)  # check in Render logs
+        print("DEBUG LOGIN:", u, p)
 
         if u in USERS and USERS[u] == p:
             session["user"] = u
@@ -140,4 +141,5 @@ def logout():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # IMPORTANT for Render
+    app.run(host="0.0.0.0", port=port)
