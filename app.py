@@ -1,176 +1,179 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import pickle
+import pytesseract
+from PIL import Image
 import os
+import re
 
+# ---------------- INIT ----------------
 app = Flask(__name__)
-app.secret_key = "fakejob_secret_2024"
+app.secret_key = 'secret123'
 
 # ---------------- LOAD MODEL ----------------
-try:
-    with open("model.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open("vectorizer.pkl", "rb") as f:
-        vectorizer = pickle.load(f)
-    print("[INFO] Model loaded")
-except Exception as e:
-    print("[WARNING] Model not loaded:", e)
-    model = None
-    vectorizer = None
+model = pickle.load(open('model.pkl', 'rb'))
+vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
 
-# ---------------- USERS ----------------
-USERS = {
-    "admin": "admin123",
-    "student": "pass123",
-    "demo": "demo",
-    "Mhetre@00": "1715",
-    "Mokal@00": "1715",
-    "Mhatre@00": "1715",
-    "Akash@00": "1715"
-}
+# ---------------- UPLOAD FOLDER ----------------
+UPLOAD_FOLDER = 'static/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 # ---------------- RULE BASED ----------------
-HIGH_RISK_KEYWORDS = ["registration fee","pay fee","send money","no experience needed"]
-MEDIUM_RISK_KEYWORDS = ["work from home","part time","urgent hiring"]
-REAL_JOB_SIGNALS = ["responsibilities","requirements","job description"]
-
-def rule_based_analysis(text):
+def rule_based_score(text):
     text_lower = text.lower()
     score = 0
     reasons = []
 
-    for k in HIGH_RISK_KEYWORDS:
-        if k in text_lower:
-            score += 20
-            reasons.append(f"Contains high-risk phrase: '{k}'")
+    keywords = ['payment', 'registration fees', 'money', 'investment',
+                'training fee', 'bank account', 'send your id', 'visa', 'lottery']
 
-    for k in MEDIUM_RISK_KEYWORDS:
-        if k in text_lower:
-            score += 8
-            reasons.append(f"Suspicious wording: '{k}'")
+    for kw in keywords:
+        if kw in text_lower:
+            score += 15
+            reasons.append(f"Contains suspicious keyword: '{kw}'")
 
-    for k in REAL_JOB_SIGNALS:
-        if k in text_lower:
-            score -= 10
+    if re.search(r'(\$|rs|inr)?\s?[5-9]{2,}[0-9]{3,}', text_lower):
+        score += 10
+        reasons.append("Unrealistic salary mentioned")
 
+    if not any(w in text_lower for w in ['company', 'organization', 'firm']):
+        score += 10
+        reasons.append("No company details mentioned")
+
+    if re.search(r'\b(gmail|yahoo|hotmail)\.com\b', text_lower):
+        score += 10
+        reasons.append("Uses free email provider")
+
+    score = min(score, 100)
     return score, reasons
 
-# ---------------- ML ----------------
-def get_ml_prediction(text):
-    if model is None or vectorizer is None:
-        return 0.5
-    try:
-        vec = vectorizer.transform([text])
-        proba = model.predict_proba(vec)[0]
-        return float(proba[1])
-    except:
-        return 0.5
-
-def combine_scores(ml, rule):
-    rule_norm = max(0, min(rule, 200)) / 200
-    return (0.6 * ml) + (0.4 * rule_norm)
-
-def get_risk_level(p):
-    if p >= 0.7:
-        return "HIGH"
-    elif p >= 0.4:
-        return "MEDIUM"
-    return "LOW"
 
 # ---------------- ANALYSIS ----------------
-def analyze_job(text):
-    ml = get_ml_prediction(text)
-    rule, reasons = rule_based_analysis(text)
+def analyze_text(text):
+    X = vectorizer.transform([text])
+    ml_prob = model.predict_proba(X)[0][1] * 100
 
-    final = combine_scores(ml, rule)
-    risk = get_risk_level(final)
+    rule_score, reasons = rule_based_score(text)
 
-    # -------- ADD MISSING FIELDS --------
-    if risk == "HIGH":
-        conclusion = "This job is highly likely to be FAKE. Avoid applying or paying any money."
-        recommendation = [
-            "Do not send any money or personal documents",
-            "Verify company on official website",
-            "Avoid WhatsApp-only communication",
-            "Report this job posting"
-        ]
-    elif risk == "MEDIUM":
-        conclusion = "This job has some suspicious signals. Proceed with caution."
-        recommendation = [
-            "Verify company legitimacy",
-            "Check LinkedIn presence",
-            "Avoid paying fees",
-            "Ask for official email communication"
-        ]
+    final_fake = (ml_prob * 0.6) + (rule_score * 0.4)
+    final_real = 100 - final_fake
+
+    if final_fake < 35:
+        risk = "LOW"
+        conclusion = "This job looks safe."
+        insight = "No major scam patterns detected."
+        recommendation = ["Still verify company before applying."]
+    elif final_fake < 65:
+        risk = "MEDIUM"
+        conclusion = "This job looks suspicious."
+        insight = "Some scam signals detected."
+        recommendation = ["Verify company details before proceeding."]
     else:
-        conclusion = "This job appears legitimate based on available data."
-        recommendation = [
-            "Still verify company website",
-            "Check job role alignment",
-            "Prepare for interview",
-            "Proceed normally"
-        ]
+        risk = "HIGH"
+        conclusion = "This job is likely FAKE."
+        insight = "Multiple scam indicators detected."
+        recommendation = ["DO NOT pay money.", "Avoid sharing personal info."]
 
     return {
-        "fake_probability": round(final * 100, 1),
-        "real_probability": round((1 - final) * 100, 1),
+        "fake_probability": round(final_fake, 2),
+        "real_probability": round(final_real, 2),
         "risk_level": risk,
-        "reasons": reasons if reasons else ["No major red flags detected"],
-
-        # 🔥 THESE FIX YOUR FRONTEND
+        "reasons": reasons if reasons else ["No major red flags"],
         "conclusion": conclusion,
+        "system_insight": insight,
         "recommendation": recommendation,
-        "system_insight": "Hybrid AI model using Machine Learning + Rule-Based detection",
-        "ml_score": round(ml * 100, 1),
-        "rule_score": rule
+        "ml_score": round(ml_prob, 2),
+        "rule_score": rule_score
     }
 
+
+# ---------------- OCR ----------------
+def extract_text_from_image(path):
+    try:
+        img = Image.open(path)
+        img = img.convert('L')  # improve OCR
+        text = pytesseract.image_to_string(img)
+        return text.strip()
+    except Exception as e:
+        print("OCR ERROR:", e)
+        return ""
+
+
 # ---------------- ROUTES ----------------
-@app.route("/", methods=["GET","POST"])
+@app.route('/')
 def login():
-    error = None
+    return render_template('login.html')
 
-    if request.method == "POST":
-        u = request.form.get("username", "").strip()
-        p = request.form.get("password", "").strip()
 
-        if u in USERS and USERS[u] == p:
-            session["user"] = u
-            return redirect(url_for("home"))
-        else:
-            error = "Invalid username or password"
+@app.route('/login', methods=['POST'])
+def do_login():
+    u = request.form['username']
+    p = request.form['password']
 
-    return render_template("login.html", error=error)
+    if u == 'admin' and p == '1234':
+        session['user'] = u
+        return redirect('/home')
+    return render_template('login.html', error="Invalid credentials")
 
-@app.route("/home")
+
+@app.route('/home')
 def home():
-    if "user" not in session:
-        return redirect(url_for("login"))
+    if 'user' not in session:
+        return redirect('/')
+    return render_template('index.html', username=session['user'])
 
-    return render_template("index.html", username=session["user"])
 
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    if "user" not in session:
-        return jsonify({"error":"login required"}),401
-
-    text = request.form.get("text","").strip()
-
-    if not text:
-        return jsonify({"error":"enter text"}),400
-
-    report = analyze_job(text)
-    return jsonify(report)
-
-@app.route("/logout")
+@app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    return redirect('/')
+
+
+# ---------------- MAIN PREDICT ----------------
+@app.route('/predict', methods=['POST'])
+def predict():
+    if 'user' not in session:
+        return jsonify({'error': 'Login required'}), 401
+
+    text = ""
+    extracted_text = ""
+
+    # IMAGE CASE
+    if 'image' in request.files and request.files['image'].filename != '':
+        img = request.files['image']
+        path = os.path.join(app.config['UPLOAD_FOLDER'], img.filename)
+        img.save(path)
+
+        extracted_text = extract_text_from_image(path)
+
+        if not extracted_text:
+            return jsonify({
+                "error": "Could not read text from image. Try clearer image."
+            }), 400
+
+        text = extracted_text
+
+    # TEXT CASE
+    if not text:
+        text = request.form.get('text', '').strip()
+
+    if not text:
+        return jsonify({'error': 'Enter text or upload image'}), 400
+
+    result = analyze_text(text)
+
+    # FINAL RESPONSE FOR UI
+    result["extracted_text"] = extracted_text[:500] if extracted_text else ""
+
+    return jsonify(result)
+
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 
 # ---------------- RUN ----------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    app.run()
