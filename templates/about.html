@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JobGuard - About</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0b0f1a; --panel: #111827; --border: #1f2d3d;
+      --accent: #00e5a0; --accent2: #0095ff; --text: #e2e8f0;
+      --muted: #64748b; --danger: #ff4d6d;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* Nav */
+    nav {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 40px; border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .nav-logo { font-size: 18px; font-weight: 800; }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { margin-left: auto; display: flex; gap: 12px; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted); font-size: 14px;
+      padding: 6px 14px; border-radius: 8px; transition: all 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    /* Hero */
+    .hero {
+      max-width: 800px; margin: 80px auto 0; padding: 0 24px; text-align: center;
+    }
+    .hero h1 {
+      font-size: 48px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { font-size: 17px; color: var(--muted); line-height: 1.8; max-width: 580px; margin: 0 auto; }
+
+    /* Cards Grid */
+    .grid {
+      max-width: 900px; margin: 64px auto;
+      padding: 0 24px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: rgba(0,229,160,0.3); transform: translateY(-4px); }
+    .card-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .card-icon svg { width: 24px; height: 24px; }
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .card-text { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* Tech Stack */
+    .tech-section {
+      max-width: 700px; margin: 0 auto 80px; padding: 0 24px; text-align: center;
+    }
+    .tech-section h2 { font-size: 26px; font-weight: 700; margin-bottom: 24px; }
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .tech-tag {
+      padding: 8px 16px; border-radius: 99px;
+      border: 1px solid var(--border); font-size: 13px;
+      font-family: 'JetBrains Mono', monospace; color: var(--text-dim);
+      background: var(--panel);
+    }
+    .tech-tag.accent { border-color: rgba(0,229,160,0.4); color: var(--accent); background: rgba(0,229,160,0.06); }
+    .tech-tag.blue   { border-color: rgba(0,149,255,0.4); color: #60a5fa; background: rgba(0,149,255,0.06); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Job<span>Guard</span></div>
+  <div class="nav-links">
+    <a href="/home">Chat</a>
+    <a href="/about">About</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>About <span>JobGuard</span> AI</h1>
+  <p>
+    A college mini-project that uses Machine Learning and rule-based analysis
+    to detect fraudulent job and internship postings in real-time.
+  </p>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="card-icon" style="background:rgba(0,229,160,0.12)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6L12 2z"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+    </div>
+    <div class="card-title">ML-Powered Detection</div>
+    <div class="card-text">
+      Uses a trained Logistic Regression model with TF-IDF vectorization
+      to classify job postings based on patterns learned from thousands of examples.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon" style="background:rgba(0,149,255,0.12)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+    </div>
+    <div class="card-title">OCR Image Analysis</div>
+    <div class="card-text">
+      Upload a screenshot of a job offer. Tesseract OCR extracts the text
+      automatically so you can analyze WhatsApp forwards and image-based offers.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon" style="background:rgba(255,77,109,0.12)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div class="card-title">Rule-Based Scoring</div>
+    <div class="card-text">
+      Over 30 hand-crafted rules that detect scam patterns: payment requests,
+      unrealistic salaries, WhatsApp recruiting, urgency tactics, and more.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon" style="background:rgba(245,158,11,0.12)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div class="card-title">Explainable Output</div>
+    <div class="card-text">
+      Not just a prediction — but a full report with risk level, detailed reasons,
+      system insights, and actionable recommendations for the user.
+    </div>
+  </div>
+</div>
+
+<div class="tech-section">
+  <h2>Technology Stack</h2>
+  <div class="tech-tags">
+    <span class="tech-tag accent">Python 3</span>
+    <span class="tech-tag accent">Flask</span>
+    <span class="tech-tag accent">Scikit-Learn</span>
+    <span class="tech-tag accent">Logistic Regression</span>
+    <span class="tech-tag blue">TF-IDF Vectorizer</span>
+    <span class="tech-tag blue">Tesseract OCR</span>
+    <span class="tech-tag blue">pytesseract</span>
+    <span class="tech-tag">Pillow</span>
+    <span class="tech-tag">HTML5 / CSS3</span>
+    <span class="tech-tag">Vanilla JavaScript</span>
+    <span class="tech-tag">Fetch API</span>
+  </div>
+</div>
+
+</body>
+</html>

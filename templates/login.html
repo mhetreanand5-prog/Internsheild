@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JobGuard - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Reset & Variables ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0f1a;
+      --panel:     #111827;
+      --border:    #1f2d3d;
+      --accent:    #00e5a0;
+      --accent2:   #0095ff;
+      --danger:    #ff4d6d;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --glow:      rgba(0, 229, 160, 0.18);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Sora', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Animated Background Grid ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 20s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes gridDrift { from { transform: translateY(0); } to { transform: translateY(48px); } }
+
+    /* ── Floating Blobs ── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      pointer-events: none;
+      animation: blobFloat 8s ease-in-out infinite alternate;
+    }
+    .blob-1 { width: 400px; height: 400px; background: var(--accent); top: -10%; left: -10%; }
+    .blob-2 { width: 350px; height: 350px; background: var(--accent2); bottom: -10%; right: -5%; animation-delay: -4s; }
+    @keyframes blobFloat { from { transform: scale(1) translateY(0); } to { transform: scale(1.1) translateY(-20px); } }
+
+    /* ── Login Card ── */
+    .login-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 0 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,229,160,0.08);
+      animation: cardIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+      z-index: 1;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* ── Logo / Header ── */
+    .logo-area {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 0 30px var(--glow);
+    }
+    .logo-icon svg { width: 32px; height: 32px; }
+    .logo-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .logo-title span { color: var(--accent); }
+    .logo-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Form Elements ── */
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'Sora', sans-serif;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+    }
+    input::placeholder { color: var(--muted); }
+
+    /* ── Error Message ── */
+    .error-msg {
+      background: rgba(255, 77, 109, 0.12);
+      border: 1px solid rgba(255, 77, 109, 0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+      animation: shake 0.4s ease;
+    }
+    @keyframes shake {
+      0%,100%{ transform: translateX(0); }
+      25%    { transform: translateX(-6px); }
+      75%    { transform: translateX(6px); }
+    }
+
+    /* ── Submit Button ── */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #00c57d);
+      border: none;
+      border-radius: 12px;
+      color: #0b0f1a;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Sora', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0,229,160,0.3);
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,229,160,0.4);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    /* ── Demo Hint ── */
+    .demo-hint {
+      margin-top: 20px;
+      background: rgba(0,149,255,0.08);
+      border: 1px solid rgba(0,149,255,0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .demo-hint p {
+      font-size: 12px;
+      color: #60a5fa;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.6;
+    }
+    .demo-hint p strong { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="login-card">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <!-- Shield SVG Icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0b0f1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6L12 2z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="logo-title">Job<span>Guard</span></div>
+      <div class="logo-sub">Fake Job Detector v1.0</div>
+    </div>
+
+    <form method="POST" action="/">
+      {% if error %}
+        <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="off"/>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required/>
+      </div>
+
+      <button type="submit" class="btn-login">Sign In</button>
+    </form>
+
+    <div class="demo-hint">
+      <p><strong>Demo Credentials:</strong></p>
+      <p>Username: <strong>Mhetre@00</strong>  |  Password: <strong>1715</strong></p>
+      <p>Username: <strong>Mokal@00</strong>   |  Password: <strong>1715</strong></p>
+      <p>Username: <strong>Mhatre@00</strong>   |  Password: <strong>1715</strong></p>  
+      <p>Username: <strong>Akash@00</strong>   |  Password: <strong>1715</strong></p> 
+    </div>
+  </div>
+</body>
+</html>
