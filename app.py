@@ -41,12 +41,12 @@ def rule_based_analysis(text):
     for k in HIGH_RISK_KEYWORDS:
         if k in text_lower:
             score += 20
-            reasons.append(k)
+            reasons.append(f"Contains high-risk phrase: '{k}'")
 
     for k in MEDIUM_RISK_KEYWORDS:
         if k in text_lower:
             score += 8
-            reasons.append(k)
+            reasons.append(f"Suspicious wording: '{k}'")
 
     for k in REAL_JOB_SIGNALS:
         if k in text_lower:
@@ -84,11 +84,44 @@ def analyze_job(text):
     final = combine_scores(ml, rule)
     risk = get_risk_level(final)
 
+    # -------- ADD MISSING FIELDS --------
+    if risk == "HIGH":
+        conclusion = "This job is highly likely to be FAKE. Avoid applying or paying any money."
+        recommendation = [
+            "Do not send any money or personal documents",
+            "Verify company on official website",
+            "Avoid WhatsApp-only communication",
+            "Report this job posting"
+        ]
+    elif risk == "MEDIUM":
+        conclusion = "This job has some suspicious signals. Proceed with caution."
+        recommendation = [
+            "Verify company legitimacy",
+            "Check LinkedIn presence",
+            "Avoid paying fees",
+            "Ask for official email communication"
+        ]
+    else:
+        conclusion = "This job appears legitimate based on available data."
+        recommendation = [
+            "Still verify company website",
+            "Check job role alignment",
+            "Prepare for interview",
+            "Proceed normally"
+        ]
+
     return {
-        "fake_probability": round(final * 100,1),
-        "real_probability": round((1-final)*100,1),
+        "fake_probability": round(final * 100, 1),
+        "real_probability": round((1 - final) * 100, 1),
         "risk_level": risk,
-        "reasons": reasons or ["No major red flags"]
+        "reasons": reasons if reasons else ["No major red flags detected"],
+
+        # 🔥 THESE FIX YOUR FRONTEND
+        "conclusion": conclusion,
+        "recommendation": recommendation,
+        "system_insight": "Hybrid AI model using Machine Learning + Rule-Based detection",
+        "ml_score": round(ml * 100, 1),
+        "rule_score": rule
     }
 
 # ---------------- ROUTES ----------------
@@ -113,8 +146,7 @@ def home():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    username = session["user"]   # ✅ FIXED LINE
-    return render_template("index.html", username=username)  # ✅ PASSING USERNAME
+    return render_template("index.html", username=session["user"])
 
 @app.route("/about")
 def about():
