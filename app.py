@@ -111,11 +111,13 @@ def login():
 
     return render_template("login.html", error=error)
 
+# ✅ FIXED ROUTE (IMPORTANT CHANGE HERE)
 @app.route("/home")
 def home():
     if "user" not in session:
         return redirect(url_for("login"))
-    return render_template("index.html")
+    
+    return render_template("index.html", username=session["user"])
 
 @app.route("/about")
 def about():
