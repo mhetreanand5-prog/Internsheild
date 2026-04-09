@@ -1,27 +1,31 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import pickle
-from PIL import Image
-import io
 import re
-import os
 
 app = Flask(__name__)
 app.secret_key = "fakejob_secret_2024"
 
-# Load ML Model
+# ---------------- LOAD MODEL ----------------
 try:
     with open("model.pkl", "rb") as f:
         model = pickle.load(f)
     with open("vectorizer.pkl", "rb") as f:
         vectorizer = pickle.load(f)
+    print("[INFO] Model loaded")
 except:
     model = None
     vectorizer = None
+    print("[WARNING] Model not loaded")
 
+# ---------------- USERS (FIXED) ----------------
 USERS = {
     "admin": "admin123",
     "student": "pass123",
-    "demo": "demo"
+    "demo": "demo",
+    "Mhetre@00": "1715",
+    "Mokal@00": "1715",
+    "Mhatre@00": "1715",
+    "Akash@00": "1715"
 }
 
 # ---------------- RULE BASED ----------------
@@ -90,20 +94,26 @@ def analyze_job(text):
 # ---------------- ROUTES ----------------
 @app.route("/", methods=["GET","POST"])
 def login():
+    error = None
+
     if request.method == "POST":
-        u = request.form["username"]
-        p = request.form["password"]
+        u = request.form.get("username", "").strip()
+        p = request.form.get("password", "").strip()
 
-        if u in USERS and USERS[u]==p:
-            session["user"]=u
-            return redirect("/home")
+        print("DEBUG LOGIN:", u, p)  # check in Render logs
 
-    return render_template("login.html")
+        if u in USERS and USERS[u] == p:
+            session["user"] = u
+            return redirect(url_for("home"))
+        else:
+            error = "Invalid username or password"
+
+    return render_template("login.html", error=error)
 
 @app.route("/home")
 def home():
     if "user" not in session:
-        return redirect("/")
+        return redirect(url_for("login"))
     return render_template("index.html")
 
 @app.route("/about")
@@ -123,6 +133,11 @@ def predict():
     report = analyze_job(text)
     return jsonify(report)
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
