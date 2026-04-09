@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import pickle
-import re
 import os
 
 app = Flask(__name__)
@@ -101,8 +100,6 @@ def login():
         u = request.form.get("username", "").strip()
         p = request.form.get("password", "").strip()
 
-        print("DEBUG LOGIN:", u, p)
-
         if u in USERS and USERS[u] == p:
             session["user"] = u
             return redirect(url_for("home"))
@@ -111,13 +108,13 @@ def login():
 
     return render_template("login.html", error=error)
 
-# ✅ FIX IS HERE (ALREADY INCLUDED)
 @app.route("/home")
 def home():
     if "user" not in session:
         return redirect(url_for("login"))
-    
-    return render_template("index.html", username=session.get("user"))
+
+    username = session["user"]   # ✅ FIXED LINE
+    return render_template("index.html", username=username)  # ✅ PASSING USERNAME
 
 @app.route("/about")
 def about():
