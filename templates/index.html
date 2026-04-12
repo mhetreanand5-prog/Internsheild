@@ -722,6 +722,7 @@
 </div><!-- end chat-area -->
 
 <!-- ════════════════════════════════ JAVASCRIPT ════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
   // ── Auto-resize textarea as user types ──
   function autoResize(el) {
@@ -1012,6 +1013,25 @@
     scrollToBottom();
   }
 
+  function appendBotInfo(msg) {
+    const messages = document.getElementById('messages');
+    const typing = document.getElementById('typingRow');
+
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.innerHTML = `
+      <div class="msg-avatar">JG</div>
+      <div>
+        <div class="bubble">
+          <span style="color:var(--text-dim);font-size:13px;">${escapeHtml(msg)}</span>
+        </div>
+        <div class="msg-time">${getTime()}</div>
+      </div>
+    `;
+    messages.insertBefore(row, typing);
+    scrollToBottom();
+  }
+
   // ── Main send function ──
   async function sendMessage() {
     const input = document.getElementById('msgInput');
@@ -1037,7 +1057,23 @@
     // Build FormData
     const formData = new FormData();
     if (selectedFile) {
-      formData.append('image', selectedFile);
+      appendBotInfo('Reading text from the image in your browser...');
+      try {
+        const ocrResult = await Tesseract.recognize(selectedFile, 'eng');
+        const extractedText = (ocrResult.data.text || '').trim();
+        if (!extractedText) {
+          hideTyping();
+          appendBotError('Could not read text from this image. Try a clearer screenshot.');
+          removeFile();
+          return;
+        }
+        formData.append('text', extractedText);
+      } catch (ocrErr) {
+        hideTyping();
+        appendBotError('Image OCR failed in the browser. Try a smaller or clearer screenshot.');
+        removeFile();
+        return;
+      }
       removeFile();
     } else {
       formData.append('text', text);
