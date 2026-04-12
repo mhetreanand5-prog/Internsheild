@@ -1,26 +1,32 @@
 import os
-pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
-from flask import Flask, render_template, request, redirect, jsonify, session
 import pickle
-import pytesseract
-from PIL import Image
-import os
 import re
 import uuid
 
+from flask import Flask, render_template, request, redirect, jsonify, session
+from PIL import Image
+import pytesseract
+
 # ---------------- INIT ----------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
-# ---------------- TESSERACT PATH (IMPORTANT FOR WINDOWS) ----------------
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# ---------------- TESSERACT PATH ----------------
+# Use an env override when provided, otherwise rely on the executable
+# available in the current OS PATH (works for Render/Linux deployments).
+pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
 
 # ---------------- LOAD MODEL ----------------
-model = pickle.load(open('model.pkl', 'rb'))
-vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
+with open(os.path.join(BASE_DIR, 'model.pkl'), 'rb') as model_file:
+    model = pickle.load(model_file)
+
+with open(os.path.join(BASE_DIR, 'vectorizer.pkl'), 'rb') as vectorizer_file:
+    vectorizer = pickle.load(vectorizer_file)
 
 # ---------------- UPLOAD FOLDER ----------------
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -110,6 +116,9 @@ def extract_text_from_image(path):
 
         return text.strip()
 
+    except pytesseract.pytesseract.TesseractNotFoundError:
+        print("OCR ERROR: Tesseract executable not found.")
+        return ""
     except Exception as e:
         print("OCR ERROR:", e)
         return ""
@@ -170,7 +179,7 @@ def predict():
 
         if not extracted_text:
             return jsonify({
-                "error": "Could not read text from image. Try clearer image."
+                "error": "Could not read text from image. Ensure Tesseract is installed on the server and try a clearer image."
             }), 400
 
         text = extracted_text
