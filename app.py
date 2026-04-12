@@ -135,7 +135,15 @@ def do_login():
     u = request.form['username']
     p = request.form['password']
 
-    if u == 'admin' and p == '1234':
+    demo_users = {
+        'Mhetre@00': '1715',
+        'Mokal@00': '1715',
+        'Mhatre@00': '1715',
+        'Akash@00': '1715',
+        'admin': '1234',
+    }
+
+    if demo_users.get(u) == p:
         session['user'] = u
         return redirect('/home')
 
