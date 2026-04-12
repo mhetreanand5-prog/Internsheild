@@ -1,13 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, session
 import pickle
 import pytesseract
 from PIL import Image
 import os
 import re
+import uuid
 
 # ---------------- INIT ----------------
 app = Flask(__name__)
 app.secret_key = 'secret123'
+
+# ---------------- TESSERACT PATH (IMPORTANT FOR WINDOWS) ----------------
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # ---------------- LOAD MODEL ----------------
 model = pickle.load(open('model.pkl', 'rb'))
@@ -92,9 +96,18 @@ def analyze_text(text):
 def extract_text_from_image(path):
     try:
         img = Image.open(path)
-        img = img.convert('L')  # improve OCR
-        text = pytesseract.image_to_string(img)
+
+        # 🔥 Improve OCR accuracy
+        img = img.convert('L')  # grayscale
+        img = img.resize((img.width * 2, img.height * 2))  # upscale
+        img = img.point(lambda x: 0 if x < 150 else 255, '1')  # threshold
+
+        custom_config = r'--oem 3 --psm 6'
+
+        text = pytesseract.image_to_string(img, config=custom_config)
+
         return text.strip()
+
     except Exception as e:
         print("OCR ERROR:", e)
         return ""
@@ -114,6 +127,7 @@ def do_login():
     if u == 'admin' and p == '1234':
         session['user'] = u
         return redirect('/home')
+
     return render_template('login.html', error="Invalid credentials")
 
 
@@ -142,10 +156,15 @@ def predict():
     # IMAGE CASE
     if 'image' in request.files and request.files['image'].filename != '':
         img = request.files['image']
-        path = os.path.join(app.config['UPLOAD_FOLDER'], img.filename)
+
+        # ✅ unique filename fix
+        filename = str(uuid.uuid4()) + ".png"
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         img.save(path)
 
         extracted_text = extract_text_from_image(path)
+
+        print("Extracted Text:", extracted_text[:200])  # debug
 
         if not extracted_text:
             return jsonify({
@@ -163,7 +182,6 @@ def predict():
 
     result = analyze_text(text)
 
-    # FINAL RESPONSE FOR UI
     result["extracted_text"] = extracted_text[:500] if extracted_text else ""
 
     return jsonify(result)
@@ -176,4 +194,4 @@ def about():
 
 # ---------------- RUN ----------------
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
