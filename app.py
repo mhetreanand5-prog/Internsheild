@@ -5,6 +5,7 @@ import uuid
 
 from flask import Flask, render_template, request, redirect, jsonify, session
 from PIL import Image
+from rapidocr_onnxruntime import RapidOCR
 import pytesseract
 
 # ---------------- INIT ----------------
@@ -13,9 +14,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
-# ---------------- TESSERACT PATH ----------------
-# Use an env override when provided, otherwise rely on the executable
-# available in the current OS PATH (works for Render/Linux deployments).
+# ---------------- OCR ENGINES ----------------
+# Prefer a pip-installable OCR engine on Render's native Python runtime.
+rapid_ocr = RapidOCR()
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
 
 # ---------------- LOAD MODEL ----------------
@@ -110,6 +111,15 @@ def extract_text_from_image(path):
         img = img.resize((img.width * 2, img.height * 2))  # upscale
         img = img.point(lambda x: 0 if x < 150 else 255, '1')  # threshold
 
+        rapid_result, _ = rapid_ocr(path)
+        if rapid_result:
+            rapid_text = " ".join(
+                line[1].strip() for line in rapid_result
+                if len(line) > 1 and line[1].strip()
+            ).strip()
+            if rapid_text:
+                return rapid_text
+
         custom_config = r'--oem 3 --psm 6'
 
         text = pytesseract.image_to_string(img, config=custom_config)
@@ -187,7 +197,7 @@ def predict():
 
         if not extracted_text:
             return jsonify({
-                "error": "Could not read text from image. Ensure Tesseract is installed on the server and try a clearer image."
+                "error": "Could not read text from image. Try a clearer image with larger, high-contrast text."
             }), 400
 
         text = extracted_text

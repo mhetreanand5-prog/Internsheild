@@ -5,3 +5,4 @@ numpy
 gunicorn
 pytesseract
 Pillow
+rapidocr-onnxruntime==1.4.4
