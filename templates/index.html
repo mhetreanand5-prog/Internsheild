@@ -834,6 +834,7 @@
     const level = data.risk_level;
     const fp    = data.fake_probability;
     const rp    = data.real_probability;
+    const accuracy = data.accuracy;
     const color = riskClass(level);
     const barColor = probBarColor(fp);
 
@@ -890,6 +891,16 @@
           </div>
         </div>
 
+        <div class="report-section">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M12 4h9"/><path d="M4 9h16"/><path d="M4 15h16"/><path d="M8 4v16"/>
+            </svg>
+            Confidence
+          </div>
+          <div class="section-text">${accuracy}% confidence in this result.</div>
+        </div>
+
         <!-- Conclusion -->
         <div class="report-section">
           <div class="section-title">
@@ -938,21 +949,6 @@
         </div>
 
         ${ocrNote}
-
-        <!-- ML Score Debug -->
-        <div class="report-section" style="background:rgba(0,0,0,0.2);">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            Analysis Scores
-          </div>
-          <div style="display:flex;gap:16px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">
-            <span>ML Score: <strong style="color:var(--accent2)">${data.ml_score}%</strong></span>
-            <span>Rule Score: <strong style="color:var(--accent2)">${data.rule_score} pts</strong></span>
-          </div>
-        </div>
 
       </div>
     `;

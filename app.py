@@ -77,26 +77,42 @@ def analyze_text(text):
 
     final_fake = (ml_prob * 0.6) + (rule_score * 0.4)
     final_real = 100 - final_fake
+    confidence = max(final_fake, final_real)
 
     if final_fake < 35:
         risk = "LOW"
         conclusion = "This job looks safe."
         insight = "No major scam patterns detected."
-        recommendation = ["Still verify company before applying."]
+        recommendation = [
+            "Still verify the company website before applying.",
+            "Apply only through trusted job portals or official career pages.",
+            "Do not share sensitive personal documents too early.",
+        ]
     elif final_fake < 65:
         risk = "MEDIUM"
         conclusion = "This job looks suspicious."
         insight = "Some scam signals detected."
-        recommendation = ["Verify company details before proceeding."]
+        recommendation = [
+            "Verify company details before proceeding.",
+            "Check whether the recruiter email and company domain match.",
+            "Search online for reviews, complaints, or scam reports.",
+            "Avoid paying any fee until legitimacy is confirmed.",
+        ]
     else:
         risk = "HIGH"
         conclusion = "This job is likely FAKE."
         insight = "Multiple scam indicators detected."
-        recommendation = ["DO NOT pay money.", "Avoid sharing personal info."]
+        recommendation = [
+            "Do not pay any money or registration fee.",
+            "Do not share Aadhaar, PAN, bank, or OTP details.",
+            "Block or report the recruiter if they pressure you urgently.",
+            "Apply only through verified company websites or trusted portals.",
+        ]
 
     return {
         "fake_probability": round(final_fake, 2),
         "real_probability": round(final_real, 2),
+        "accuracy": round(confidence, 2),
         "risk_level": risk,
         "reasons": reasons if reasons else ["No major red flags"],
         "conclusion": conclusion,
