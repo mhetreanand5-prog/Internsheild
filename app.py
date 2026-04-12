@@ -3,58 +3,65 @@ import pickle
 import re
 import uuid
 
-from flask import Flask, render_template, request, redirect, jsonify, session
+import numpy as np
+import pytesseract
+from flask import Flask, jsonify, redirect, render_template, request, session
 from PIL import Image
 from rapidocr_onnxruntime import RapidOCR
-import pytesseract
 
-# ---------------- INIT ----------------
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
-app.secret_key = 'secret123'
+app.secret_key = "secret123"
 
-# ---------------- OCR ENGINES ----------------
-# Prefer a pip-installable OCR engine on Render's native Python runtime.
 rapid_ocr = RapidOCR()
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
 
-# ---------------- LOAD MODEL ----------------
-with open(os.path.join(BASE_DIR, 'model.pkl'), 'rb') as model_file:
+
+with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as model_file:
     model = pickle.load(model_file)
 
-with open(os.path.join(BASE_DIR, 'vectorizer.pkl'), 'rb') as vectorizer_file:
+with open(os.path.join(BASE_DIR, "vectorizer.pkl"), "rb") as vectorizer_file:
     vectorizer = pickle.load(vectorizer_file)
 
-# ---------------- UPLOAD FOLDER ----------------
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
-# ---------------- RULE BASED ----------------
 def rule_based_score(text):
     text_lower = text.lower()
     score = 0
     reasons = []
 
-    keywords = ['payment', 'registration fees', 'money', 'investment',
-                'training fee', 'bank account', 'send your id', 'visa', 'lottery']
+    keywords = [
+        "payment",
+        "registration fees",
+        "money",
+        "investment",
+        "training fee",
+        "bank account",
+        "send your id",
+        "visa",
+        "lottery",
+    ]
 
     for kw in keywords:
         if kw in text_lower:
             score += 15
             reasons.append(f"Contains suspicious keyword: '{kw}'")
 
-    if re.search(r'(\$|rs|inr)?\s?[5-9]{2,}[0-9]{3,}', text_lower):
+    if re.search(r"(\$|rs|inr)?\s?[5-9]{2,}[0-9]{3,}", text_lower):
         score += 10
         reasons.append("Unrealistic salary mentioned")
 
-    if not any(w in text_lower for w in ['company', 'organization', 'firm']):
+    if not any(w in text_lower for w in ["company", "organization", "firm"]):
         score += 10
         reasons.append("No company details mentioned")
 
-    if re.search(r'\b(gmail|yahoo|hotmail)\.com\b', text_lower):
+    if re.search(r"\b(gmail|yahoo|hotmail)\.com\b", text_lower):
         score += 10
         reasons.append("Uses free email provider")
 
@@ -62,7 +69,6 @@ def rule_based_score(text):
     return score, reasons
 
 
-# ---------------- ANALYSIS ----------------
 def analyze_text(text):
     X = vectorizer.transform([text])
     ml_prob = model.predict_proba(X)[0][1] * 100
@@ -97,35 +103,36 @@ def analyze_text(text):
         "system_insight": insight,
         "recommendation": recommendation,
         "ml_score": round(ml_prob, 2),
-        "rule_score": rule_score
+        "rule_score": rule_score,
     }
 
 
-# ---------------- OCR ----------------
 def extract_text_from_image(path):
     try:
-        img = Image.open(path)
+        with Image.open(path) as img:
+            img = img.convert("L")
 
-        # 🔥 Improve OCR accuracy
-        img = img.convert('L')  # grayscale
-        img = img.resize((img.width * 2, img.height * 2))  # upscale
-        img = img.point(lambda x: 0 if x < 150 else 255, '1')  # threshold
+            max_side = 1800
+            if max(img.size) > max_side:
+                img.thumbnail((max_side, max_side))
 
-        rapid_result, _ = rapid_ocr(path)
+            img = img.resize((img.width * 2, img.height * 2))
+            img = img.point(lambda x: 0 if x < 150 else 255, "1")
+            processed_image = np.array(img)
+
+        rapid_result, _ = rapid_ocr(processed_image)
         if rapid_result:
             rapid_text = " ".join(
-                line[1].strip() for line in rapid_result
+                line[1].strip()
+                for line in rapid_result
                 if len(line) > 1 and line[1].strip()
             ).strip()
             if rapid_text:
                 return rapid_text
 
-        custom_config = r'--oem 3 --psm 6'
-
-        text = pytesseract.image_to_string(img, config=custom_config)
-
+        fallback_image = Image.fromarray(processed_image)
+        text = pytesseract.image_to_string(fallback_image, config="--oem 3 --psm 6")
         return text.strip()
-
     except pytesseract.pytesseract.TesseractNotFoundError:
         print("OCR ERROR: Tesseract executable not found.")
         return ""
@@ -134,93 +141,101 @@ def extract_text_from_image(path):
         return ""
 
 
-# ---------------- ROUTES ----------------
-@app.route('/')
+@app.route("/")
 def login():
-    return render_template('login.html')
+    return render_template("login.html")
 
 
-@app.route('/login', methods=['POST'])
+@app.route("/login", methods=["POST"])
 def do_login():
-    u = request.form['username']
-    p = request.form['password']
+    username = request.form["username"]
+    password = request.form["password"]
 
     demo_users = {
-        'Mhetre@00': '1715',
-        'Mokal@00': '1715',
-        'Mhatre@00': '1715',
-        'Akash@00': '1715',
-        'admin': '1234',
+        "Mhetre@00": "1715",
+        "Mokal@00": "1715",
+        "Mhatre@00": "1715",
+        "Akash@00": "1715",
+        "admin": "1234",
     }
 
-    if demo_users.get(u) == p:
-        session['user'] = u
-        return redirect('/home')
+    if demo_users.get(username) == password:
+        session["user"] = username
+        return redirect("/home")
 
-    return render_template('login.html', error="Invalid credentials")
+    return render_template("login.html", error="Invalid credentials")
 
 
-@app.route('/home')
+@app.route("/home")
 def home():
-    if 'user' not in session:
-        return redirect('/')
-    return render_template('index.html', username=session['user'])
+    if "user" not in session:
+        return redirect("/")
+    return render_template("index.html", username=session["user"])
 
 
-@app.route('/logout')
+@app.route("/logout")
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect("/")
 
 
-# ---------------- MAIN PREDICT ----------------
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
-    if 'user' not in session:
-        return jsonify({'error': 'Login required'}), 401
+    if "user" not in session:
+        return jsonify({"error": "Login required"}), 401
 
     text = ""
     extracted_text = ""
+    path = None
 
-    # IMAGE CASE
-    if 'image' in request.files and request.files['image'].filename != '':
-        img = request.files['image']
+    try:
+        if "image" in request.files and request.files["image"].filename != "":
+            image_file = request.files["image"]
 
-        # ✅ unique filename fix
-        filename = str(uuid.uuid4()) + ".png"
-        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        img.save(path)
+            ext = os.path.splitext(image_file.filename)[1].lower() or ".png"
+            if ext not in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
+                ext = ".png"
 
-        extracted_text = extract_text_from_image(path)
+            filename = f"{uuid.uuid4()}{ext}"
+            path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image_file.save(path)
 
-        print("Extracted Text:", extracted_text[:200])  # debug
+            extracted_text = extract_text_from_image(path)
+            print("Extracted Text:", extracted_text[:200])
 
-        if not extracted_text:
-            return jsonify({
-                "error": "Could not read text from image. Try a clearer image with larger, high-contrast text."
-            }), 400
+            if not extracted_text:
+                return jsonify(
+                    {
+                        "error": "Could not read text from image. Try a clearer image with larger, high-contrast text."
+                    }
+                ), 400
 
-        text = extracted_text
+            text = extracted_text
 
-    # TEXT CASE
-    if not text:
-        text = request.form.get('text', '').strip()
+        if not text:
+            text = request.form.get("text", "").strip()
 
-    if not text:
-        return jsonify({'error': 'Enter text or upload image'}), 400
+        if not text:
+            return jsonify({"error": "Enter text or upload image"}), 400
 
-    result = analyze_text(text)
+        result = analyze_text(text)
+        result["extracted_text"] = extracted_text[:500] if extracted_text else ""
+        return jsonify(result)
+    except Exception as e:
+        print("PREDICT ERROR:", e)
+        return jsonify({"error": f"Server error while analyzing image/text: {e}"}), 500
+    finally:
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
-    result["extracted_text"] = extracted_text[:500] if extracted_text else ""
 
-    return jsonify(result)
-
-
-@app.route('/about')
+@app.route("/about")
 def about():
-    return render_template('about.html')
+    return render_template("about.html")
 
 
-# ---------------- RUN ----------------
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

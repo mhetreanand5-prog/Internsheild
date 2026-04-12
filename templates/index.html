@@ -1050,7 +1050,13 @@
         body: formData
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (parseErr) {
+        data = { error: `Server returned an unexpected response (${response.status}).` };
+      }
       hideTyping();
 
       if (response.ok) {
@@ -1060,7 +1066,7 @@
       }
     } catch (err) {
       hideTyping();
-      appendBotError('Network error. Make sure the server is running.');
+      appendBotError('Request failed. Please try again. If it keeps happening, the server likely returned a non-JSON error.');
     }
   }
 
