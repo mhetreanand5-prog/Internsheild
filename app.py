@@ -15,8 +15,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-rapid_ocr = RapidOCR()
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
+rapid_ocr = None
 
 
 with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as model_file:
@@ -107,46 +107,41 @@ def analyze_text(text):
     }
 
 
+def get_rapid_ocr():
+    global rapid_ocr
+    if rapid_ocr is None:
+        rapid_ocr = RapidOCR()
+    return rapid_ocr
+
+
 def extract_text_from_image(path):
     try:
         with Image.open(path) as img:
             img = ImageOps.exif_transpose(img)
             original = img.convert("RGB")
 
-            max_side = 1800
+            max_side = 1200
             if max(original.size) > max_side:
                 original.thumbnail((max_side, max_side))
 
             grayscale = original.convert("L")
-            upscaled = grayscale.resize((grayscale.width * 2, grayscale.height * 2))
-            thresholded = upscaled.point(lambda x: 0 if x < 170 else 255, "L")
+            # A single modest upscale is much cheaper than multiple OCR passes.
+            upscaled = grayscale.resize(
+                (max(grayscale.width, 1) * 2, max(grayscale.height, 1) * 2)
+            )
+            candidate = np.asarray(upscaled, dtype=np.uint8)
 
-        ocr_candidates = [
-            np.asarray(original, dtype=np.uint8),
-            np.asarray(grayscale, dtype=np.uint8),
-            np.asarray(upscaled, dtype=np.uint8),
-            np.asarray(thresholded, dtype=np.uint8),
-        ]
-
-        best_text = ""
-        for candidate in ocr_candidates:
-            rapid_result, _ = rapid_ocr(candidate)
-            if not rapid_result:
-                continue
-
-            candidate_text = " ".join(
+        rapid_result, _ = get_rapid_ocr()(candidate)
+        if rapid_result:
+            rapid_text = " ".join(
                 line[1].strip()
                 for line in rapid_result
                 if len(line) > 1 and isinstance(line[1], str) and line[1].strip()
             ).strip()
+            if rapid_text:
+                return rapid_text
 
-            if len(candidate_text) > len(best_text):
-                best_text = candidate_text
-
-        if best_text:
-            return best_text
-
-        fallback_image = Image.fromarray(np.asarray(upscaled, dtype=np.uint8))
+        fallback_image = Image.fromarray(candidate)
         text = pytesseract.image_to_string(fallback_image, config="--oem 3 --psm 6")
         return text.strip()
     except pytesseract.pytesseract.TesseractNotFoundError:
