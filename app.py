@@ -1,6 +1,5 @@
-import pytesseract
-
-pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+import os
+pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH", "tesseract")
 from flask import Flask, render_template, request, redirect, jsonify, session
 import pickle
 import pytesseract
