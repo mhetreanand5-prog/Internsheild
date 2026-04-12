@@ -122,10 +122,10 @@ def extract_text_from_image(path):
             thresholded = upscaled.point(lambda x: 0 if x < 170 else 255, "L")
 
         ocr_candidates = [
-            np.array(original),
-            np.array(grayscale),
-            np.array(upscaled),
-            np.array(thresholded),
+            np.asarray(original, dtype=np.uint8),
+            np.asarray(grayscale, dtype=np.uint8),
+            np.asarray(upscaled, dtype=np.uint8),
+            np.asarray(thresholded, dtype=np.uint8),
         ]
 
         best_text = ""
@@ -146,7 +146,7 @@ def extract_text_from_image(path):
         if best_text:
             return best_text
 
-        fallback_image = Image.fromarray(np.array(upscaled))
+        fallback_image = Image.fromarray(np.asarray(upscaled, dtype=np.uint8))
         text = pytesseract.image_to_string(fallback_image, config="--oem 3 --psm 6")
         return text.strip()
     except pytesseract.pytesseract.TesseractNotFoundError:
