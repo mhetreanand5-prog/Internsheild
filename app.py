@@ -88,6 +88,12 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
         "dm now": 10,
         "work from home": 6,
         "congratulations you have been selected": 18,
+        "without interview": 22,
+        "weekly payments": 12,
+        "ppo guaranteed": 14,
+        "limited slots": 14,
+        "offer valid": 12,
+        "refund after first week salary": 22,
     }
 
     trust_signals = {
@@ -139,6 +145,31 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
         score += 8
         reasons.append("Encourages rushed decision-making without normal hiring steps.")
 
+    # Strong scam-combination boosts for common fake offer-letter patterns.
+    if ("without interview" in text_lower or "no interview" in text_lower) and (
+        "registration fee" in text_lower
+        or "registration amount" in text_lower
+        or "security deposit" in text_lower
+    ):
+        score += 25
+        reasons.append("Selection without interview combined with a fee request is a major scam pattern.")
+
+    if ("whatsapp" in text_lower or "telegram" in text_lower) and (
+        "registration fee" in text_lower
+        or "payment" in text_lower
+        or "pay immediately" in text_lower
+    ):
+        score += 20
+        reasons.append("Asks for payment through informal chat channels like WhatsApp or Telegram.")
+
+    if ("limited slots" in text_lower or "offer valid" in text_lower or "next 2 hours" in text_lower) and (
+        "payment" in text_lower
+        or "registration fee" in text_lower
+        or "pay immediately" in text_lower
+    ):
+        score += 18
+        reasons.append("Uses urgency plus payment pressure, which is common in fake job scams.")
+
     return min(score, 100), reasons
 
 
@@ -152,7 +183,7 @@ def analyze_text(text: str) -> dict:
     link_verification = build_link_verification(domain_analysis)
     ai_prob = ai_generated_probability(cleaned_text)
 
-    combined_fake = (ml_prob * 0.5) + (rule_score * 0.25) + (domain_analysis["domain_risk_score"] * 0.25)
+    combined_fake = (ml_prob * 0.35) + (rule_score * 0.45) + (domain_analysis["domain_risk_score"] * 0.20)
     combined_fake = min(combined_fake, 100)
     combined_real = 100 - combined_fake
     confidence = max(combined_fake, combined_real)

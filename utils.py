@@ -52,6 +52,12 @@ RISK_KEYWORDS = [
     "dm now",
     "work from home",
     "congratulations you have been selected",
+    "without interview",
+    "weekly payments",
+    "ppo guaranteed",
+    "limited slots",
+    "offer valid",
+    "refund after first week salary",
 ]
 GENERIC_AI_PHRASES = [
     "dynamic work environment",
