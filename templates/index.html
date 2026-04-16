@@ -553,10 +553,11 @@
             <ul>${renderList(data.email_analysis || [])}</ul>
           </div>
 
+          ${data.highlighted_text ? `
           <div class="result-section">
             <h3>Highlighted Suspicious Text</h3>
-            <div class="highlight-box">${data.highlighted_text || ''}</div>
-          </div>
+            <div class="highlight-box">${data.highlighted_text}</div>
+          </div>` : ''}
         </article>
       `;
     }

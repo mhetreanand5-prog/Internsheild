@@ -129,6 +129,31 @@ def clean_extracted_text(text):
     return text.strip()
 
 
+def is_readable_text(text):
+    text = (text or "").strip()
+    if len(text) < 40:
+        return False
+
+    alpha_chars = sum(char.isalpha() for char in text)
+    digit_chars = sum(char.isdigit() for char in text)
+    weird_chars = sum(not (char.isalnum() or char.isspace() or char in ".,!?@:/%$&()-'\"") for char in text)
+    total_chars = max(len(text), 1)
+
+    alpha_ratio = alpha_chars / total_chars
+    weird_ratio = weird_chars / total_chars
+    digit_ratio = digit_chars / total_chars
+
+    words = re.findall(r"[A-Za-z]{2,}", text)
+    if len(words) < 8:
+        return False
+
+    long_consonant_chunks = re.findall(r"[bcdfghjklmnpqrstvwxyz]{6,}", text.lower())
+    if long_consonant_chunks:
+        return False
+
+    return alpha_ratio >= 0.45 and weird_ratio <= 0.08 and digit_ratio <= 0.35
+
+
 def extract_text_from_image(path):
     with Image.open(path) as img:
         img = ImageOps.exif_transpose(img)
@@ -301,6 +326,9 @@ def ai_generated_probability(text):
 
 
 def highlight_suspicious_terms(text):
+    if not is_readable_text(text):
+        return ""
+
     escaped_text = html.escape(text)
     for keyword in sorted(RISK_KEYWORDS, key=len, reverse=True):
         pattern = re.compile(re.escape(html.escape(keyword)), flags=re.IGNORECASE)
