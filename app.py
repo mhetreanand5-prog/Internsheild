@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 from utils import (
     ai_generated_probability,
     analyze_domains_and_emails,
+    build_link_verification,
     clean_extracted_text,
     extract_text_from_file,
     fetch_history,
@@ -106,6 +107,7 @@ def analyze_text(text: str) -> dict:
 
     rule_score, reasons = rule_based_score(cleaned_text)
     domain_analysis = analyze_domains_and_emails(cleaned_text)
+    link_verification = build_link_verification(domain_analysis)
     ai_prob = ai_generated_probability(cleaned_text)
 
     combined_fake = (ml_prob * 0.5) + (rule_score * 0.25) + (domain_analysis["domain_risk_score"] * 0.25)
@@ -165,6 +167,9 @@ def analyze_text(text: str) -> dict:
         "email_analysis": domain_analysis["email_analysis"],
         "urls": domain_analysis["urls"],
         "domains": domain_analysis["domains"],
+        "link_verdict": link_verification["link_verdict"],
+        "link_message": link_verification["link_message"],
+        "link_checked": link_verification["link_checked"],
         "ai_generated_probability": ai_prob,
         "highlighted_text": highlight_suspicious_terms(cleaned_text),
         "cleaned_text": cleaned_text,

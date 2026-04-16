@@ -208,7 +208,8 @@ def extract_text_from_file(path, extension):
 
 
 def detect_urls(text):
-    return re.findall(r"(https?://[^\s]+|www\.[^\s]+)", text, flags=re.IGNORECASE)
+    pattern = r"(https?://[^\s]+|www\.[^\s]+|\b[a-zA-Z0-9-]+\.(?:com|in|org|net|co|io|xyz|top|site|live|info|biz|work|click|buzz)(?:/[^\s]*)?)"
+    return re.findall(pattern, text, flags=re.IGNORECASE)
 
 
 def detect_emails(text):
@@ -291,6 +292,37 @@ def analyze_domains_and_emails(text):
         "domain_risk_score": min(domain_score, 100),
         "domain_findings": domain_findings,
         "email_analysis": email_findings or ["No major email mismatches detected."],
+    }
+
+
+def build_link_verification(domain_analysis):
+    urls = domain_analysis.get("urls", [])
+    domains = domain_analysis.get("domains", [])
+    score = domain_analysis.get("domain_risk_score", 0)
+
+    if not urls and not domains:
+        return {
+            "link_verdict": "No link detected",
+            "link_message": "Paste a website URL to verify whether it looks suspicious or relatively safe.",
+            "link_checked": False,
+        }
+
+    primary_target = urls[0] if urls else domains[0]
+
+    if score < 25:
+        verdict = "Safe-looking link"
+        message = f"{primary_target} does not show strong scam-domain signals, but you should still verify the site manually."
+    elif score < 55:
+        verdict = "Suspicious link"
+        message = f"{primary_target} shows some risky patterns. Check the domain carefully before trusting it."
+    else:
+        verdict = "Likely fake link"
+        message = f"{primary_target} shows multiple risky domain patterns and should not be trusted without strong verification."
+
+    return {
+        "link_verdict": verdict,
+        "link_message": message,
+        "link_checked": True,
     }
 
 

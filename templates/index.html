@@ -553,6 +553,12 @@
             <ul>${renderList(data.email_analysis || [])}</ul>
           </div>
 
+          <div class="result-section">
+            <h3>Link Verification</h3>
+            <p><strong style="color:var(--text);">${escapeHtml(data.link_verdict || 'No link detected')}</strong></p>
+            <p style="margin-top:8px;">${escapeHtml(data.link_message || 'Paste a link to verify it.')}</p>
+          </div>
+
         </article>
       `;
     }
