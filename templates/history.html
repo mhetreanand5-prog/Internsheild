@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JobGuard - History</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b27;
+      --border: #1f2d40;
+      --accent: #00e5a0;
+      --danger: #ff4d6d;
+      --warn: #f59e0b;
+      --safe: #22c55e;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --muted: #475569;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(22, 27, 39, 0.95);
+    }
+    .brand { font-size: 20px; font-weight: 800; }
+    .brand span { color: var(--accent); }
+    .links { display: flex; gap: 10px; }
+    .links a {
+      text-decoration: none;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px 28px;
+    }
+    .hero {
+      margin-bottom: 20px;
+    }
+    .hero h1 { font-size: 30px; margin-bottom: 8px; }
+    .hero p { color: var(--text-dim); line-height: 1.7; }
+    .table-shell {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 16px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+    td { color: var(--text-dim); }
+    .risk-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+    }
+    .risk-pill.low { background: rgba(34,197,94,0.12); color: var(--safe); }
+    .risk-pill.medium { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .risk-pill.high { background: rgba(255,77,109,0.12); color: var(--danger); }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .empty {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-dim);
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">Job<span>Guard</span></div>
+    <div class="links">
+      <a href="/home">Analyze</a>
+      <a href="/history">History</a>
+      <a href="/about">About</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>Analysis History</h1>
+      <p>Recent predictions for {{ username }}. This dashboard stores the input label, fake percentage, risk level, and timestamp in SQLite.</p>
+    </div>
+
+    <div class="table-shell">
+      {% if records %}
+      <table>
+        <thead>
+          <tr>
+            <th>Input</th>
+            <th>Fake %</th>
+            <th>Risk Level</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in records %}
+          <tr>
+            <td>{{ row["input_label"] }}</td>
+            <td class="mono">{{ row["fake_probability"] }}%</td>
+            <td>
+              <span class="risk-pill {{ row['risk_level'].lower() }}">{{ row["risk_level"] }}</span>
+            </td>
+            <td>{{ row["created_at"] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">
+        No history yet. Run an analysis from the main page and your results will appear here.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
