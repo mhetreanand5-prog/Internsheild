@@ -63,6 +63,12 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
         "payment": 15,
         "registration fee": 18,
         "registration fees": 18,
+        "registration amount": 18,
+        "security deposit": 20,
+        "joining amount": 20,
+        "processing fee": 18,
+        "interview fee": 20,
+        "slot booking": 16,
         "money": 12,
         "investment": 14,
         "training fee": 16,
@@ -71,15 +77,39 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
         "visa": 10,
         "lottery": 14,
         "whatsapp": 8,
+        "telegram": 10,
         "otp": 12,
         "urgent joining": 10,
         "guaranteed income": 18,
+        "limited vacancy": 10,
+        "earn daily": 16,
+        "daily income": 14,
+        "no interview": 14,
+        "dm now": 10,
+        "work from home": 6,
+        "congratulations you have been selected": 18,
+    }
+
+    trust_signals = {
+        "responsibilities": 4,
+        "qualifications": 4,
+        "job description": 4,
+        "notice period": 3,
+        "official careers page": 5,
+        "equal opportunity employer": 5,
+        "benefits": 3,
+        "interview rounds": 3,
+        "reporting manager": 3,
     }
 
     for keyword, weight in keyword_weights.items():
         if keyword in text_lower:
             score += weight
             reasons.append(f"Contains suspicious phrase: '{keyword}'")
+
+    for phrase, reduction in trust_signals.items():
+        if phrase in text_lower:
+            score -= reduction
 
     if re.search(r"(\$|rs|inr)?\s?[5-9]{2,}[0-9]{3,}", text_lower):
         score += 10
@@ -96,6 +126,18 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
     if "immediate joining" in text_lower or "limited seats" in text_lower:
         score += 8
         reasons.append("Uses urgency tactics to pressure quick action.")
+
+    if "no experience" in text_lower and re.search(r"earn|salary|income", text_lower):
+        score += 10
+        reasons.append("Promises earnings while requiring little or no experience.")
+
+    if "contact on whatsapp" in text_lower or "message on whatsapp" in text_lower:
+        score += 10
+        reasons.append("Pushes conversation to WhatsApp instead of official hiring channels.")
+
+    if "apply immediately" in text_lower or "join today" in text_lower:
+        score += 8
+        reasons.append("Encourages rushed decision-making without normal hiring steps.")
 
     return min(score, 100), reasons
 
