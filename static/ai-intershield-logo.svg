@@ -1,0 +1,41 @@
+<svg width="960" height="320" viewBox="0 0 960 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="320" fill="white"/>
+  <g transform="translate(56 40)">
+    <path d="M120 8L204 38V112C204 170 168 222 120 244C72 222 36 170 36 112V38L120 8Z" fill="#0B1F52"/>
+    <path d="M120 28L187 52V112C187 161 157 205 120 224C83 205 53 161 53 112V52L120 28Z" fill="url(#shieldGlow)"/>
+    <path d="M120 54L161 69V109C161 141 143 171 120 186C97 171 79 141 79 109V69L120 54Z" fill="#0A4DFF" opacity="0.18"/>
+    <path d="M120 54L161 69V109C161 141 143 171 120 186C97 171 79 141 79 109V69L120 54Z" stroke="#0A4DFF" stroke-width="4"/>
+
+    <path d="M91 108H149" stroke="#0A4DFF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M120 80V140" stroke="#0A4DFF" stroke-width="8" stroke-linecap="round"/>
+
+    <path d="M120 80L94 60" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 80L146 60" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 140L96 164" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 140L144 164" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M91 108L67 108" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M149 108L173 108" stroke="#8DE8FF" stroke-width="4" stroke-linecap="round"/>
+
+    <circle cx="94" cy="60" r="8" fill="#8DE8FF"/>
+    <circle cx="146" cy="60" r="8" fill="#8DE8FF"/>
+    <circle cx="96" cy="164" r="8" fill="#8DE8FF"/>
+    <circle cx="144" cy="164" r="8" fill="#8DE8FF"/>
+    <circle cx="67" cy="108" r="8" fill="#8DE8FF"/>
+    <circle cx="173" cy="108" r="8" fill="#8DE8FF"/>
+  </g>
+
+  <g transform="translate(320 96)">
+    <text x="0" y="0" fill="#0B1F52" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="800" letter-spacing="-1.2">AI</text>
+    <text x="84" y="0" fill="#0A4DFF" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="800" letter-spacing="-1.2">Intershield</text>
+    <text x="2" y="48" fill="#5B6F95" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="3.2">CYBERSECURITY • INTELLIGENCE • TRUST</text>
+    <path d="M2 78H378" stroke="#D7E4FF" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="392" cy="78" r="6" fill="#0A4DFF"/>
+  </g>
+
+  <defs>
+    <linearGradient id="shieldGlow" x1="53" y1="32" x2="187" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#123A9B"/>
+      <stop offset="1" stop-color="#0A4DFF"/>
+    </linearGradient>
+  </defs>
+</svg>
