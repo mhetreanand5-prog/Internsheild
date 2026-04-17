@@ -10,7 +10,6 @@ import numpy as np
 import pytesseract
 from docx import Document
 from PIL import Image, ImageOps
-from rapidocr_onnxruntime import RapidOCR
 
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.db")
@@ -86,7 +85,11 @@ _rapid_ocr = None
 def get_rapid_ocr():
     global _rapid_ocr
     if _rapid_ocr is None:
-        _rapid_ocr = RapidOCR()
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _rapid_ocr = RapidOCR()
+        except Exception:
+            _rapid_ocr = False
     return _rapid_ocr
 
 
@@ -191,7 +194,11 @@ def extract_text_from_image(path):
     except pytesseract.pytesseract.TesseractNotFoundError:
         pass
 
-    rapid_result, _ = get_rapid_ocr()(image_array)
+    rapid_ocr = get_rapid_ocr()
+    if not rapid_ocr:
+        return ""
+
+    rapid_result, _ = rapid_ocr(image_array)
     if not rapid_result:
         return ""
 
