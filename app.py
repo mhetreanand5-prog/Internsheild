@@ -173,26 +173,106 @@ def rule_based_score(text: str) -> Tuple[int, List[str]]:
     return min(score, 100), reasons
 
 
+def detect_non_posting_document(text: str) -> Tuple[int, List[str]]:
+    text_lower = text.lower()
+    score = 0
+    reasons = []
+
+    application_markers = {
+        "subject - application for internship": 25,
+        "subject: application for internship": 25,
+        "application for internship": 20,
+        "application for job": 18,
+        "respected sir/madam": 18,
+        "dear sir/madam": 16,
+        "i am writing to apply": 16,
+        "attached my resume": 16,
+        "yours sincerely": 14,
+        "yours faithfully": 14,
+        "thanking you": 12,
+        "hr manager": 10,
+    }
+
+    posting_markers = {
+        "job description",
+        "responsibilities",
+        "qualifications",
+        "requirements",
+        "skills required",
+        "how to apply",
+        "stipend",
+        "salary",
+        "job role",
+        "location",
+    }
+
+    placeholder_markers = {
+        "abc company": 18,
+        "xyz university": 18,
+    }
+
+    for phrase, weight in application_markers.items():
+        if phrase in text_lower:
+            score += weight
+            reasons.append(f"Looks like an application letter, not a job posting: '{phrase}'")
+
+    for phrase, weight in placeholder_markers.items():
+        if phrase in text_lower:
+            score += weight
+            reasons.append(f"Contains placeholder-style details: '{phrase}'")
+
+    if re.search(r"\bto,\s+the hr manager\b", text_lower):
+        score += 18
+        reasons.append("Addressed to an HR manager like a personal application letter.")
+
+    if re.search(r"\b(b\.?\s?tech|btech|2nd year|3rd year|final year)\b", text_lower):
+        score += 10
+        reasons.append("Focuses on the applicant's academic profile instead of describing a role.")
+
+    if re.search(r"\bcontact\s*[-:]", text_lower):
+        score += 8
+        reasons.append("Ends like a personal letter with direct applicant contact details.")
+
+    if not any(marker in text_lower for marker in posting_markers):
+        score += 10
+        reasons.append("Missing normal job-posting sections such as responsibilities or requirements.")
+
+    return min(score, 100), reasons
+
+
 def analyze_text(text: str) -> dict:
     cleaned_text = clean_extracted_text(text)
     X = vectorizer.transform([cleaned_text])
     ml_prob = model.predict_proba(X)[0][1] * 100
 
     rule_score, reasons = rule_based_score(cleaned_text)
+    non_posting_score, non_posting_reasons = detect_non_posting_document(cleaned_text)
     domain_analysis = analyze_domains_and_emails(cleaned_text)
     link_verification = build_link_verification(domain_analysis)
     ai_prob = ai_generated_probability(cleaned_text)
 
     combined_fake = (ml_prob * 0.35) + (rule_score * 0.45) + (domain_analysis["domain_risk_score"] * 0.20)
+    if non_posting_score >= 40:
+        combined_fake = max(combined_fake, 85)
     combined_fake = min(combined_fake, 100)
     combined_real = 100 - combined_fake
     confidence = max(combined_fake, combined_real)
 
-    enhanced_reasons = reasons + domain_analysis["domain_findings"]
+    enhanced_reasons = reasons + non_posting_reasons + domain_analysis["domain_findings"]
     if ai_prob >= 60:
         enhanced_reasons.append("The text looks overly generic or formulaic, which can indicate AI-generated scam content.")
 
-    if combined_fake < 35:
+    if non_posting_score >= 40:
+        risk = "HIGH"
+        conclusion = "This does not look like a real job or internship posting."
+        insight = "The content matches a handwritten or personal application-letter format instead of an official hiring post."
+        recommendation = [
+            "Treat this as non-genuine for job-posting verification.",
+            "Look for an official company post, careers page, or recruiter email before trusting it.",
+            "Do not use handwritten notes or personal letter formats as proof of a real internship offer.",
+            "Ask for an official offer letter, role description, stipend details, and company contact information.",
+        ]
+    elif combined_fake < 35:
         risk = "LOW"
         conclusion = "This job looks relatively safe."
         insight = "No major scam patterns were detected across the model, rules, and domain checks."
@@ -236,6 +316,7 @@ def analyze_text(text: str) -> dict:
         "recommendation": recommendation,
         "ml_score": round(ml_prob, 2),
         "rule_score": rule_score,
+        "non_posting_score": non_posting_score,
         "domain_risk_score": domain_analysis["domain_risk_score"],
         "email_analysis": domain_analysis["email_analysis"],
         "urls": domain_analysis["urls"],
